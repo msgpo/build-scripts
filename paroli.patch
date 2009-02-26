@@ -1,0 +1,75 @@
+--- openembedded/packages/openmoko-projects/paroli_git.bb	2009-02-24 07:31:58.000000000 +0100
++++ openembedded/packages/openmoko-projects/paroli_git.bb.new	2009-02-24 07:34:04.000000000 +0100
+@@ -2,13 +2,15 @@
+ SECTION = "x11"
+ LICENSE = "GPL"
+ PV = "0.2.1+gitr${SRCREV}"
+-PR = "r0"
++PR = "r7"
+ 
+ SRC_URI = "git://git.paroli-project.org/paroli.git;protocol=http"
+ S = "${WORKDIR}/git"
+ 
+ inherit distutils
+ 
++PACKAGES += "${PN}-autostart ${PN}-theme"
++
+ RDEPENDS = "\
+   python-datetime \
+   python-subprocess \
+@@ -17,4 +19,54 @@
+   python-pygobject \
+ "
+ 
+-FILES_${PN} += "${sysconfdir}/dbus-1 ${sysconfdir}/paroli ${datadir}"
++E_CONFIG_DIR="/home/root/.e/e"
++#E_CONFIG_DIR="/usr/share/enlightenment/data"
++
++do_install_append() {
++       	# install paroli theme
++       	install -d ${D}${E_CONFIG_DIR}/config/illume/
++       	install ${S}/data/module.illume.cfg ${D}${E_CONFIG_DIR}/config/illume/
++       	install ${S}/data/e.cfg ${D}${E_CONFIG_DIR}/config/illume/
++       	install -d ${D}${E_CONFIG_DIR}/themes
++	install ${S}/data/illume.edj ${D}${E_CONFIG_DIR}/themes
++    	install -d ${D}/etc/enlightenment/
++	echo 'E_PROFILE="-profile illume"' > ${D}/etc/enlightenment/default_profile
++
++       	# install autostart
++    	install -d ${D}${E_CONFIG_DIR}/applications/all
++	cp ${D}/usr/share/applications/paroli-launcher.desktop ${D}${E_CONFIG_DIR}/applications/all
++    	install -d ${D}${E_CONFIG_DIR}/applications/startup
++       	echo "paroli-launcher.desktop" >> ${D}${E_CONFIG_DIR}/applications/startup/.order
++       	#echo "#!/bin/sh" > ${D}${E_CONFIG_DIR}/applications/startup/paroli
++       	#echo "export DISPLAY=:0" >> ${D}${E_CONFIG_DIR}/applications/startup/paroli
++       	#echo "exec /usr/bin/paroli-launcher" >> ${D}${E_CONFIG_DIR}/applications/startup/paroli
++       	#chmod a+x ${D}${E_CONFIG_DIR}/applications/startup/paroli
++
++       	#install -d ${D}${sysconfdir}/X11/Xsession.d/
++       	#echo "#!/bin/sh" > ${D}${sysconfdir}/X11/Xsession.d/80paroli
++       	#echo "export DISPLAY=:0" >> ${D}${sysconfdir}/X11/Xsession.d/80paroli
++       	#echo "exec /usr/bin/paroli-launcher" >> ${D}${sysconfdir}/X11/Xsession.d/80paroli
++       	#chmod a+x ${D}${sysconfdir}/X11/Xsession.d/80paroli
++
++	install -d ${D}${sysconfdir}/freesmartphone/oevents
++	install ${S}/data/rules.yaml ${D}${sysconfdir}/freesmartphone/oevents/paroli_rules.yaml
++}
++
++pkg_postinst() {
++#!/bin/sh
++# post installation script
++echo "*******************************************"
++echo "Deactivating zhone autostart"
++echo "*******************************************"
++chmod -x ${sysconfdir}/X11/Xsession.d/80zhone || true
++mv ${sysconfdir}/freesmartphone/oevents/rules.yaml ${sysconfdir}/freesmartphone/oevents/old_rules.yaml
++cp ${sysconfdir}/freesmartphone/oevents/paroli_rules.yaml ${sysconfdir}/freesmartphone/oevents/rules.yaml
++#mkdir -p ${E_CONFIG_DIR}/applications/all
++#cp /usr/share/applications/paroli-launcher.desktop ${E_CONFIG_DIR}/applications/all
++exit 0
++}
++
++FILES_${PN} += "${sysconfdir}/dbus-1 ${sysconfdir}/paroli ${sysconfdir}/freesmartphone ${datadir}"
++FILES_${PN}-theme = "${E_CONFIG_DIR}/themes ${E_CONFIG_DIR}/config /etc/enlightenment"
++FILES_${PN}-autostart = "${E_CONFIG_DIR}/applications"
++
