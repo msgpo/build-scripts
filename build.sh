@@ -3,6 +3,8 @@
 echo -n "build starts at "
 date
 
+trap "rm ${LOCK_FILE}" EXIT
+
 absolute_dir () {
 	local D
 	D=$(dirname $1)
@@ -70,11 +72,9 @@ build() {
        ## end bad hack
        ####################################################################################
 
-#       bitbake -c rebuild ${DISTRO_KERNEL}
+       bitbake -c rebuild ${DISTRO_KERNEL}
        bitbake linux-openmoko-2.6.24
        bitbake linux-openmoko-2.6.28
-       bitbake linux-openmoko-devel
-       bitbake linux-openmoko-stable
 #       bitbake -c rebuild linux-openmoko-2.6.24
 #       bitbake -c rebuild linux-openmoko-2.6.28
 #       bitbake -c rebuild linux-openmoko-devel
@@ -183,9 +183,9 @@ do
 	do
 	        export BBPATH="${OEDIR}/${MACHINE}-${OM_FEED}-meta:${OEDIR}/local:${OEDIR}/openembedded"
 		export MACHINE
-		set +e
+		set +xe
 		build
-		set -e
+		set -xe
 	done
 done
 
