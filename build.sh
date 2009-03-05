@@ -3,8 +3,6 @@
 echo -n "build starts at "
 date
 
-trap "rm ${LOCK_FILE}" EXIT
-
 absolute_dir () {
 	local D
 	D=$(dirname $1)
@@ -34,18 +32,15 @@ if [ -f ${LOCK_FILE} ] ; then
 	exit 10
 fi
 
+trap "rm ${LOCK_FILE}" EXIT
+
 touch ${LOCK_FILE}
 
 build() {
        echo "Runing build - ${OM_FEED} ${DISTRO_KERNEL}"
        ####################################################################################
        ## this is a bad hack that needs patching upstream
-       patch -N -p0 < element.patch 
-       patch -N -p0 < bluez4.patch 
-       patch -N -p0 < srcrev.patch 
        patch -N -p0 < paroli.patch 
-       patch -N -p0 < devel.patch 
-       patch -N -p0 < stable.patch 
        ## end bad hack
        ####################################################################################
 
@@ -57,15 +52,19 @@ build() {
        if [ ${OM_FEED} = "experimental" ]; then
 	   case ${MACHINE} in
 	       om-gta01 ) 
-                   sed -i "s|2.6.28|2.6.29-rc3|" ${OEDIR}/openembedded/packages/linux/linux-openmoko-devel_git.bb  
-                   sed -i "s|gta02-packaging-defconfig|gta01_moredrivers_defconfig|" ${OEDIR}/openembedded/packages/linux/linux-openmoko-devel_git.bb  
-		   sed -i "s|gta02_packaging_defconfig|gta01_moredrivers_defconfig|" ${OEDIR}/openembedded/packages/linux/linux-openmoko-devel_git.bb
-		   sed -i "s|file://openwrt-ledtrig-netdev.patch;patch=1||" ${OEDIR}/openembedded/packages/linux/linux-openmoko-devel_git.bb ;;
+#                   sed -i "s|2.6.28|2.6.29-rc3|" ${OEDIR}/openembedded/packages/linux/linux-openmoko-devel_git.bb  
+#                   sed -i "s|gta02-packaging-defconfig|gta01_moredrivers_defconfig|" ${OEDIR}/openembedded/packages/linux/linux-openmoko-devel_git.bb  
+#		   sed -i "s|gta02_packaging_defconfig|gta01_moredrivers_defconfig|" ${OEDIR}/openembedded/packages/linux/linux-openmoko-devel_git.bb
+#		   sed -i "s|file://openwrt-ledtrig-netdev.patch;patch=1||" ${OEDIR}/openembedded/packages/linux/linux-openmoko-devel_git.bb
+		   bitbake -c rebuild linux-openmoko-2.6.24
+		   bitbake -c rebuild linux-openmoko-2.6.28 ;;
+
 	       om-gta02 ) 
-                   sed -i "s|2.6.28|2.6.29-rc3|" ${OEDIR}/openembedded/packages/linux/linux-openmoko-devel_git.bb  
-                   sed -i "s|gta01_moredrivers_defconfig|gta02_packaging_defconfig|" ${OEDIR}/openembedded/packages/linux/linux-openmoko-devel_git.bb  
-		   sed -i "s|gta02-packaging-defconfig|gta02_packaging_defconfig|" ${OEDIR}/openembedded/packages/linux/linux-openmoko-devel_git.bb
-		   sed -i "s|file://openwrt-ledtrig-netdev.patch;patch=1||" ${OEDIR}/openembedded/packages/linux/linux-openmoko-devel_git.bb
+ #                  sed -i "s|2.6.28|2.6.29-rc3|" ${OEDIR}/openembedded/packages/linux/linux-openmoko-devel_git.bb  
+ #                  sed -i "s|gta01_moredrivers_defconfig|gta02_packaging_defconfig|" ${OEDIR}/openembedded/packages/linux/linux-openmoko-devel_git.bb  
+#		   sed -i "s|gta02-packaging-defconfig|gta02_packaging_defconfig|" ${OEDIR}/openembedded/packages/linux/linux-openmoko-devel_git.bb
+#		   sed -i "s|file://openwrt-ledtrig-netdev.patch;patch=1||" ${OEDIR}/openembedded/packages/linux/linux-openmoko-devel_git.bb
+		   patch -N -p0 < om-gta02_conf.patch
 		   bitbake xf86-video-glamo ;;
 	   esac
        fi
@@ -73,12 +72,6 @@ build() {
        ####################################################################################
 
        bitbake -c rebuild ${DISTRO_KERNEL}
-       bitbake linux-openmoko-2.6.24
-       bitbake linux-openmoko-2.6.28
-#       bitbake -c rebuild linux-openmoko-2.6.24
-#       bitbake -c rebuild linux-openmoko-2.6.28
-#       bitbake -c rebuild linux-openmoko-devel
-#       bitbake -c rebuild linux-openmoko-stable
        bitbake -c buildall fso-image-nox
        bitbake -c buildall fso-paroli-image
        bitbake -c buildall fso-image 
@@ -193,8 +186,9 @@ bitbake package-index
 
 post_build
 
+rm ${LOCK_FILE}
+
 echo -n "build ends at "
 date
 
-rm ${LOCK_FILE}
 
